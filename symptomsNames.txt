@@ -1,0 +1,12 @@
+﻿heat
+Cough
+sore throat
+snot
+Fatigue
+Muscle pain
+dyspnea
+rash
+Lost taste or smell
+Paroxysmal cough
+Lack of appetite
+dizziness

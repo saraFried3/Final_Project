@@ -7,34 +7,42 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Numerics;
 using System.Text.RegularExpressions;
-//using static Automat.Program;
-
-//BigInteger bigNumber = BigInteger.Parse("123456789012345678901234567890");
+using iTextSharp.text.pdf.parser;
+using iTextSharp.text.pdf;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+using System.Diagnostics.Eventing.Reader;
+using sarasProject;
 
 namespace Automat
 {
     internal class Program
     {
-        public const int n = 5;
-        public const int m = 10;
+        public static int n=0;
+        public static int m=0;
+        public static int num_of_words=0;
         static void Main(string[] args)
         {
+            
+            Dictionary<int, string> DiseasesNames = buildNamesDictionary(@"..\..\DiseasesNames.txt");
+            n = DiseasesNames.Count();
+            Dictionary<int, string> symptomsNames = buildNamesDictionary(@"..\..\symptomsNames.txt");
+            m = symptomsNames.Count();
+            let[] Auto = buildAuto();                                                                 //בנית אוטומט
             Console.WriteLine("lets begin");
             while (true)
             {
-                let[] Auto = buildAuto();                                                              //בנית אוטומט
                 List<Symptom> symptoms = readTheInput(Auto);                                           //שלב האימות וקביעה עבור כל תסמין רלונטי את הערך שהוא מיצג
                 checkSymptoms(symptoms);                                                               //קריאת הקלט, מעבר באוטומט וקבלת נתוני תסמין    //       
                 List<int> illnessDecision = IllnessDecision(symptoms);                                 //הכרעת המחלה
-                foreach (int illness in illnessDecision)                                                  //הדפסת המחלות הכבדות ביותר
+                foreach (int illness in illnessDecision)                                               //הדפסת המחלות הכבדות ביותר
                 {
-                    Console.WriteLine("The disease identified is: " + illness);
-                }
+                    Console.WriteLine("The disease identified is: "+illness+": " + DiseasesNames[illness]);
+                }   
                 Console.WriteLine($"The disease identified is: {illnessDecision.ToString()}.");
                 Console.WriteLine("enter another symptom");
             }
         }
-
         public class let
         {
             public let[] next { get; set; }
@@ -52,17 +60,23 @@ namespace Automat
                 this.num = num;
                 this.collection = collection;
             }
-            public endLet() { }
+            public endLet()
+            {
+                this.num = -1;
+                this.collection = 0;
+            }
         }
         public class Symptom
         {
             public int num { get; set; }
             public string str { get; set; }                                                                     //מחרוזת תיוג
             public int not { get; set; }                                                                        //מונה למילות שלילה
+            public int time { get; set; }                                                                        //מונה למילות שלילה
             public BigInteger sum { get; set; }                                                                 //סכום היצוגים של כל המילים
             public List<endLet> listOfWords { get; set; }                                                       //לבדוק האם צריך - שמירת המילים 
             public Symptom()
             {
+                this.time = 0;
                 this.num = -1;
                 this.str = string.Empty;
                 this.not = 0;
@@ -77,6 +91,7 @@ namespace Automat
         {
             string filePath = @"..\..\words.txt";
             string[] words = File.ReadAllLines(filePath);
+            num_of_words = words.Length/3;
             let[] Auto = new let[26];
             let[] l;
             for (int i = 0; i + 2 < words.Length; i += 3)                                                                     // מעבר על כל מילה
@@ -127,8 +142,8 @@ namespace Automat
             string str1 = Console.ReadLine();                                                                           //קבלת קלט בכתב או מהקלטה
             str1 = str1.Trim();
             str1 = str1.ToLower();
-            string[] arr = str1.Split('.','!','?');
-            for(int i=0;i<arr.Length; i++)
+            string[] arr = str1.Split('.', '!', '?');
+            for (int i = 0; i < arr.Length; i++)
                 arr[i] = Regex.Replace(arr[i], pattern, "");
             for (int i = 0; i < arr.Length; i++)
                 arr[i] += ' ';
@@ -152,84 +167,40 @@ namespace Automat
                         else
                         {
                             ptr = Auto;
-                            isValidWord=false;
+                            isValidWord = false;
                         }
                     }
                     if (str2[j + 1] == ' ' && (str2[j] - 'a' >= 0 && str2[j] - 'a' < ptr.Length))                       //אם הגעתי לאות האחרונה במילה- סוף מילה
                     {
-                        if (j + 2 < str2.Length && isValidWord)
+                        if (j + 2 < str2.Length)
                             if (isExpression(ptr, str2, j, ref word) != -1)
                                 isExpression2 = true;
-                        if(!isExpression2)
+                        if (!isExpression2)
                             if (ptr[str2[j] - 'a'] is endLet)
-                                //if (j + 2 < str2.Length)
-                                {
-                                    word = (endLet)ptr[str2[j] - 'a'];
-                                    ptr = Auto;
-                                }
-                    //{
-                        //    if (ptr[str2[j]-'a'] != null)
-                        //    {
-                        //        ptr = ptr[str2[j] - 'a'].next;
-                        //        if (ptr[str2[j + 2] - 'a'] != null)
-                        //        {
-                        //            x = isExpression(ptr, str2, j + 1, ref word);
-                        //        }
-                        //    }
-                //}                                                                                                      //אם המילה היא ביטוי מורכב שמור את מספר הביטוי
-                      
-                    //    if (ptr[str2[j] - 'a'] is endLet && x == -1)                                                           //אם לא זוהה ביטוי וכן הגעת למצב מקבל, שמור את ערך המילה שזוהתה
-                    //    {
-                    //        word = (endLet)ptr[str2[j]-'a'];
-                    //    }
-                    //
-                        // addWord(x,symptom);
-                        //  ptr = ptr[(int)str2[j] - (int)'a'].next;                                                    //תתקדם באוטומט לאות הבאה בקלט
-                        //  if (j + 2 < str2.Length)
-                        //  {
-                        //      //ptr = ptr[str1[j] - 'a'].next;
-                        //      int index = str2[j + 2] - 'a';
-                        //      if (index < 26 && index > 0 && ptr[index] != null)
-                        //      {
-                        //          x = isExpression(ptr[str2[j + 2] - 'a'].next, str1, j + 1, word);
-                        //      }
-
-                        //  }
-                        //  if (x == -1)
-                        //  {
-                        //      ptr = Auto;
-                        //  }
-                        //if (ptr[str2[j] - 'a'] is endLet)
-                        //if (x != -1)
-                        if(!isExpression2)
+                            //if (j + 2 < str2.Length)
+                            {
+                                word = (endLet)ptr[str2[j] - 'a'];
+                                ptr = Auto;
+                            }
+                        if (!isExpression2)
                         {
                             countWord++;
-                            //if (word == null)
-                              //  word = (endLet)ptr[str2[j] - 'a'];
-                            //Console.WriteLine($"word.num: {Math.Log(word.num) / Math.Log(2)}");
                             Console.WriteLine($"word.num: {word.num}");
-                            //symptom.listOfWords.Add(word);                                                           // listOfWords -יש למחוק שורה זו אם מבטלים את השדה 
                             if (word.collection == 1)
                                 symptom.sum += (BigInteger)Math.Pow(2, word.num);
-                            if (word.collection == 2 || word.collection==4)                                            //אם המילה היא מילת שלילה
+                            if (word.collection == 2)                                            //אם המילה היא מילת שלילה
                                 symptom.not++;                                                                         //תעלה את מונה מילות השלילה                                                                                  
+                            if (word.collection == 4)
+                                symptom.time = word.num;
                             symptom.str = symptom.str + word.collection.ToString();                                    //שרשור יצוג האוסף למחרוזת היצוגים      
                             word = new endLet();
                             ptr = Auto;
                         }
                         else                                                                                           //במקרה והגענו לסוף המילה והיא לא מופיעה באוטומט נבדוק האם היא מוכלת בביטוי מורכב          
                         {
-                            //if (!isExpression2)
-                            //{
-                              //  symptom.str += 0;
-                              //  ptr = Auto;
-                            //}
-                            //else
-                            //{
-                                isExpression2 = false;
-                                if (ptr[str2[j]-'a']!=null)
-                                    ptr = ptr[str2[j] - 'a'].next;
-                            //}
+                            isExpression2 = false;
+                            if (ptr[str2[j] - 'a'] != null)
+                                ptr = ptr[str2[j] - 'a'].next;
                         }
 
                     }
@@ -241,6 +212,117 @@ namespace Automat
             return symptoms;
         }
 
+        public static List<Symptom> readTheInputk2(let[] Auto)
+        {
+            bool isExpression2;
+            Symptom symptom;
+            string pattern = @"[^a-zA-Z\s]";
+            endLet word = new endLet();
+            List<Symptom> symptoms = new List<Symptom>();
+            let[] ptr;
+            int countWord;
+            bool isValidWord;
+            Console.WriteLine("Tell me how you feel, what symptoms you have.");
+            string str1 = Console.ReadLine();                                                                           //קבלת קלט בכתב או מהקלטה
+            str1 = str1.Trim();
+            str1 = str1.ToLower();
+            string[] arr = str1.Split('.', '!', '?');
+            for (int i = 0; i < arr.Length; i++)
+                arr[i] = Regex.Replace(arr[i], pattern, "");
+            for (int i = 0; i < arr.Length; i++)
+                arr[i] += ' ';
+            foreach (string str2 in arr)                                                                                //מעבר על כל תסמין-כל משפט מהקלט
+            {
+                isValidWord = true;
+                isExpression2 = false;
+                int x = -1;
+                countWord = 0;
+                symptom = new Symptom();                                                                                //יצירת עצם חדש עבור התסמין הנוכחי
+                ptr = Auto;
+                for (int j = 0; j < str2.Length - 1; j++)                                                               //מעבר על כל אות בקלט
+                {
+                    if (str2[j] - 'a' < 26 && str2[j] - 'a' >= 0 && str2[j + 1] != ' ')                                 //אם התו הוא אכן אות אנגלית קטנה
+                    {                                                                                                   //&& !(ptr[(int)str2[j] - (int)'a'] is endLet)) //אם האות מופיעה באוטומט וגם היא לא האות האחרונה במילה
+                        if (ptr[(int)str2[j] - (int)'a'] != null)                                                       //אם המקום הזה לא ריק
+                        {
+                            ptr = ptr[(int)str2[j] - (int)'a'].next;                                                    //התקדם למצב של האות הבאה
+                        }
+                        else                                                                                             //לא קיים במילון כלומר המילה לא נמצאת במאגר
+                        {
+                            string newString = str2.Substring(j);
+                            int end_of_word = newString.IndexOf(' ');
+                            j += end_of_word;
+                            ptr = Auto;
+                            isValidWord = false;
+
+                        }
+                    }
+                    if (j + 1 == str2.Length || str2[j + 1] == ' ')  //הגעתי לסוף מילה
+                        if (j + 1 >= 0 && j + 1 < str2.Length && (str2[j] - 'a' >= 0 && str2[j] - 'a' < ptr.Length))                       //אם הגעתי לאות האחרונה במילה- סוף מילה
+                        {
+                            word = new endLet();
+                            if (j + 2 < str2.Length)//&& isValidWord)
+                                if (isExpression(ptr, str2, j, ref word) != -1)
+                                    isExpression2 = true;
+                            if (!isExpression2)
+                                if (ptr[str2[j] - 'a'] is endLet)
+                                //if (j + 2 < str2.Length)
+                                {
+                                    word = (endLet)ptr[str2[j] - 'a'];
+                                    ptr = Auto;
+                                }
+                                else                                                                                           //במקרה והגענו לסוף המילה והיא לא מופיעה באוטומט נבדוק האם היא מוכלת בביטוי מורכב          
+                                {
+                                    //if (!isExpression2)
+                                    //{
+                                    //  symptom.str += 0;
+                                    //  ptr = Auto;
+                                    //}
+                                    //else
+                                    //{
+
+                                    //}
+                                }
+                            if (!isExpression2)
+                            {
+                                countWord++;
+                                //if (word == null)
+                                //  word = (endLet)ptr[str2[j] - 'a'];
+                                //Console.WriteLine($"word.num: {Math.Log(word.num) / Math.Log(2)}");
+                                Console.WriteLine($"word.num: {word.num}");
+                                Console.WriteLine(j + "   j  ");
+                                //symptom.listOfWords.Add(word);                                                           // listOfWords -יש למחוק שורה זו אם מבטלים את השדה 
+                                switch (word.collection)
+                                {
+                                    case 1:
+                                        symptom.sum += (BigInteger)Math.Pow(2, word.num);
+                                        break;
+                                    case 2:
+                                        symptom.not++;                                                                         //תעלה את מונה מילות השלילה                                                                                  
+                                        break;
+                                    case 4:
+                                        symptom.time = word.num;
+                                        break;
+                                }
+                                //if (word.collection == 1)
+                                //    symptom.sum += (BigInteger)Math.Pow(2, word.num);
+                                //if (word.collection == 2 || word.collection==4)                                            //אם המילה היא מילת שלילה
+                                //    symptom.not++;                                                                         //תעלה את מונה מילות השלילה                                                                                  
+                                symptom.str = symptom.str + word.collection.ToString();                                    //שרשור יצוג האוסף למחרוזת היצוגים      
+                                word = new endLet();
+                                ptr = Auto;
+                            }
+                            isExpression2 = false;
+                            if (ptr[str2[j] - 'a'] != null)
+                                ptr = ptr[str2[j] - 'a'].next;
+                        }
+                    symptoms.Add(symptom);
+                    Console.WriteLine($"Symptom_str: {symptom.str}, Not: {symptom.not}, Time: {symptom.time}, Sum: {symptom.sum}, countWord:{countWord}");
+                    Console.WriteLine($"print the symptoms:{str2}");
+                }
+            }
+            return symptoms;
+        }
         private static void addWord(int x, Symptom s)
         {
             switch (x)
@@ -268,7 +350,7 @@ namespace Automat
                 {
                     if (ptr[index] is endLet)
                     {
-                        //word2 = (endLet)ptr[index];
+                        word2 = (endLet)ptr[index];
                         return word2.num;
                     }
                     if (ptr[index] != null)
@@ -281,7 +363,18 @@ namespace Automat
             }
             return -1;
         }
-    
+        public static Dictionary<int, string> buildNamesDictionary(string filePath )
+        {
+            Dictionary<int,string> names = new Dictionary<int,string>();
+            string[] arr = File.ReadAllLines(filePath);
+            for (int i = 0; i < arr.Length; i++)
+            {
+                names.Add(i, arr[i]);
+            }
+            return names;
+        }                                  //בנית מילון ובו יצוגי הסכימות של המילים משמשים כמפתחות ויצוגי התסמינים משמשים כערכים
+
+
         public static Dictionary<BigInteger, int> buildDictionary()                                  //בנית מילון ובו יצוגי הסכימות של המילים משמשים כמפתחות ויצוגי התסמינים משמשים כערכים
         {
             Dictionary<BigInteger, int> dic = new Dictionary<BigInteger, int>();
@@ -302,6 +395,7 @@ namespace Automat
         }
         public static void checkSymptoms(List<Symptom> symptoms)                             //פונקציה שמבצעת את שלב האימות ומאתחלת את השדה num
         {
+            int t;
             Dictionary<BigInteger, int> dic = buildDictionary();
             foreach (Symptom s in symptoms)                                                  //עוברים על כל תסמין
             {
@@ -310,16 +404,24 @@ namespace Automat
                 BigInteger value = s.sum;
                 //int value=(int)Math.Floor(Math.Log(s.sum, 2));
                 Console.WriteLine("value of sum:  " + value);
+                string str = value.ToString();
                 if (dic.ContainsKey(value))
                     num1 = dic[value];
+                else
+                {
+                    t = check_in_dic.CheckInDict(dic, s.sum);
+                    if (t != -1 && s.num == -1)
+                    {
+                        num1 = t;
+                    }
+                }
                 //for (int i = 0; i < s.str.Length; i++)
                 //if (s.str[i] == 2 && i<s.str.Length-1 && s.str[i + 1] == 2)             //אם מופיעות 2 מילות שלילה רצופות
-                if (s.not % 2 == 1)
-                {                                                                                     
+                if (s.not % 2 == 1 || s.time!=0)
+                {
                     num1 = -1;                                                             //התסמין לא רלונטי
                 }
                 s.num = num1;
-                
             }
         }
         public static double[][] buildWeightMatrix()                                         //בנית מטריצת משקלים
@@ -354,27 +456,51 @@ namespace Automat
                         //Console.WriteLine((int)Math.Floor(Math.Log(symptom.sum, 2)) - 1);
                         //diseases[i] += weightMatrix[i][(int)Math.Floor(Math.Log(symptom.sum, 2))-1];
                         diseases[i] += weightMatrix[i][symptom.num];
-                        Console.WriteLine("i:  " + diseases[i]);
+                        Console.WriteLine("i: "+i +" = "+ diseases[i]);
                     }
             }
             for (int i = 0; i < diseases.Length; i++)                                         //בדיקת המחלות הכבדות ביותר
                 if (!(maxValue > diseases[i]))
                 {
                     if (maxValue == diseases[i])
-                        maxIllnesses.Add(i);                         //הוספת מחלה עם הערך הצקסימלי
-                    else
-                    {
-                        maxValue = diseases[i];                       //שמירת הערך המקסימלי המעודכן 
-                        maxIllnesses.Clear();                         //ריקון הרשימה מהמחלות עם הערך הקודם
-                        maxIllnesses.Add(i);                          //הוספת המחלה עם הערך המקסימלי המעודכן
+                        maxIllnesses.Add(i);                                                 //הוספת מחלה עם הערך הצקסימלי
+                    else                                                                 
+                    {                                                                    
+                        maxValue = diseases[i];                                              //שמירת הערך המקסימלי המעודכן 
+                        maxIllnesses.Clear();                                                //ריקון הרשימה מהמחלות עם הערך הקודם
+                        maxIllnesses.Add(i);                                                 //הוספת המחלה עם הערך המקסימלי המעודכן
                     }
                 }
-            if (maxValue != 0) { }
-               // foreach (int Illness in maxIllnesses)
-               //   Console.WriteLine("The Illness we found is: " + Illness);
-            else
+            if (maxValue== 0) 
                 Console.WriteLine("there is no deasess with this symptom");
-            return maxIllnesses;
+            else
+                Console.WriteLine("the max value in the deases array is:  "+maxValue);
+                return maxIllnesses;
         }
+
+        public static int check_in_dic2(Dictionary<BigInteger,int> dic, BigInteger user_discription)
+        {
+            string str = Convert.ToString((long)user_discription, 2);
+            BigInteger current_user_discription;
+            string stringMask = new string('1', num_of_words-1) + "0";
+            BigInteger mask = BigInteger.Parse(stringMask);
+            for (int i = 0; i < num_of_words; i++)
+            {
+                //Console.WriteLine(stringMask);
+                current_user_discription = user_discription & mask;
+                string str3 = Convert.ToString((long)current_user_discription, 2);
+                //Console.WriteLine(Convert.ToString((long)current_user_discription, 2));
+                if(dic.ContainsKey(current_user_discription))
+                { 
+                    Console.WriteLine("we find this value in the dictionary:     "+dic[current_user_discription]); 
+                    return dic[current_user_discription];
+                }
+                mask = check_in_dic.leftRotate(mask);
+                string strMask = Convert.ToString((long)mask, 2);
+            }
+            Console.WriteLine("there is not sum in the dictionary");
+            return -1;
+        }
+
     }
 }
