@@ -15,20 +15,20 @@ namespace sarasProject
         {
             if (dict.ContainsKey(originalValue))  // ננסה לבדוק את הערך המקורי
             {
+                Console.WriteLine("   : מצאנו את הערך גם ללא הורדת סיבית" + dict[originalValue]);
                 return dict[originalValue];
             }
             for (int i = 0; i < Program.num_of_words; i++)                    // ננסה לכבות כל סיבית בתורה
             {
                 BigInteger mask = ~(BigInteger.One << i); // מסיכה שמכבה את הסיבית במקום i
                 BigInteger modifiedValue = originalValue & mask;
-
                 if (dict.ContainsKey(modifiedValue))
                 {
-                    Console.WriteLine("מצאנו ערך לאחר כיבוי סיבית: " + dict[modifiedValue]);
+                    Console.WriteLine("מצאנו ערך לאחר כיבוי סיבית: ❤️" + dict[modifiedValue]);
                     return dict[modifiedValue];
                 }
             }
-            Console.WriteLine("לא נמצא ערך גם לאחר כיבוי סיבית");
+            Console.WriteLine("😢לא נמצא ערך גם לאחר כיבוי סיבית");
             return -1;
         }
 

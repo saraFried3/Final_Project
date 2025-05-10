@@ -40,7 +40,7 @@ not
 head
 13
 1
-chills
+chill
 14
 1
 no
@@ -115,3 +115,6 @@ week
 nextweek
 38
 3
+cant
+39
+2

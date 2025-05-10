@@ -13,6 +13,9 @@ using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using System.Diagnostics.Eventing.Reader;
 using sarasProject;
+using Porter2Stemmer;
+using Porter2StemmerStandard;
+
 
 namespace Automat
 {
@@ -23,7 +26,6 @@ namespace Automat
         public static int num_of_words=0;
         static void Main(string[] args)
         {
-            
             Dictionary<int, string> DiseasesNames = buildNamesDictionary(@"..\..\DiseasesNames.txt");
             n = DiseasesNames.Count();
             Dictionary<int, string> symptomsNames = buildNamesDictionary(@"..\..\symptomsNames.txt");
@@ -43,6 +45,8 @@ namespace Automat
                 Console.WriteLine("enter another symptom");
             }
         }
+   
+
         public class let
         {
             public let[] next { get; set; }
@@ -128,9 +132,26 @@ namespace Automat
             }
             return Auto;
         }
+        static string GetStemsFromSentence(string sentence)
+        {
+            // מפצל את המחרוזת למילים
+            string[] words = sentence.Split(new char[] { ' ', '.', ',', ';', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // הגדרת השורש מתוך ה-Porter2StemmerStandard
+            var stemmer = new Porter2StemmerStandard.EnglishPorter2Stemmer();  // הגדרה מפורשת של ה-namespace
+            var stems = new string[words.Length];
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                stems[i] = stemmer.Stem(words[i]).Value; // השתמש ב-.Value כדי לקבל מחרוזת
+            }
+
+            return string.Join(" ", stems);
+        }
+
         public static List<Symptom> readTheInput(let[] Auto)
         {
-            bool isExpression2;
+            bool isExpression2;string str= "0556724093 מיכל סגל";
             Symptom symptom;
             string pattern = @"[^a-zA-Z\s]";
             endLet word = new endLet();
@@ -138,29 +159,28 @@ namespace Automat
             let[] ptr;
             int countWord;
             bool isValidWord;
-            Console.WriteLine("Tell me how you feel, what symptoms you have.");
-            string str1 = Console.ReadLine();                                                                           //קבלת קלט בכתב או מהקלטה
-            str1 = str1.Trim();
-            str1 = str1.ToLower();
+            Console.WriteLine("Tell me how you feel, what symptoms you have.");                                                                         
+            string str1= Console.ReadLine().Trim().ToLower();//קבלת קלט בכתב או מהקלטה
+            Console.WriteLine(str1);
             string[] arr = str1.Split('.', '!', '?');
             for (int i = 0; i < arr.Length; i++)
+            {
                 arr[i] = Regex.Replace(arr[i], pattern, "");
-            for (int i = 0; i < arr.Length; i++)
+                arr[i] = GetStemsFromSentence(arr[i]);
                 arr[i] += ' ';
+            }  
             foreach (string str2 in arr)                                                                                //מעבר על כל תסמין-כל משפט מהקלט
             {
                 isValidWord = true;
                 isExpression2 = false;
-                int x = -1;
                 countWord = 0;
                 symptom = new Symptom();                                                                                //יצירת עצם חדש עבור התסמין הנוכחי
                 ptr = Auto;
                 for (int j = 0; j < str2.Length - 1; j++)                                                               //מעבר על כל אות בקלט
                 {
-
                     if (str2[j] - 'a' < 26 && str2[j] - 'a' >= 0 && str2[j + 1] != ' ')                                 //אם התו הוא אכן אות אנגלית קטנה
                     {                                                                                                   //&& !(ptr[(int)str2[j] - (int)'a'] is endLet)) //אם האות מופיעה באוטומט וגם היא לא האות האחרונה במילה
-                        if (ptr[(int)str2[j] - (int)'a'] != null)                                                       //אם המקום הזה לא ריק
+                        if (ptr[(int)str2[j] - (int)'a'] != null&& isValidWord)                                                       //אם המקום הזה לא ריק
                         {
                             ptr = ptr[(int)str2[j] - (int)'a'].next;                                                    //התקדם למצב של האות הבאה
                         }
@@ -184,6 +204,7 @@ namespace Automat
                             }
                         if (!isExpression2)
                         {
+                            isValidWord = true;
                             countWord++;
                             Console.WriteLine($"word.num: {word.num}");
                             if (word.collection == 1)
@@ -199,7 +220,7 @@ namespace Automat
                         else                                                                                           //במקרה והגענו לסוף המילה והיא לא מופיעה באוטומט נבדוק האם היא מוכלת בביטוי מורכב          
                         {
                             isExpression2 = false;
-                            if (ptr[str2[j] - 'a'] != null)
+                            if (ptr[str2[j] - 'a'] != null && isValidWord)
                                 ptr = ptr[str2[j] - 'a'].next;
                         }
 
@@ -211,7 +232,6 @@ namespace Automat
             }
             return symptoms;
         }
-
         public static List<Symptom> readTheInputk2(let[] Auto)
         {
             bool isExpression2;
@@ -235,7 +255,6 @@ namespace Automat
             {
                 isValidWord = true;
                 isExpression2 = false;
-                int x = -1;
                 countWord = 0;
                 symptom = new Symptom();                                                                                //יצירת עצם חדש עבור התסמין הנוכחי
                 ptr = Auto;
@@ -395,7 +414,6 @@ namespace Automat
         }
         public static void checkSymptoms(List<Symptom> symptoms)                             //פונקציה שמבצעת את שלב האימות ומאתחלת את השדה num
         {
-            int t;
             Dictionary<BigInteger, int> dic = buildDictionary();
             foreach (Symptom s in symptoms)                                                  //עוברים על כל תסמין
             {
@@ -405,18 +423,7 @@ namespace Automat
                 //int value=(int)Math.Floor(Math.Log(s.sum, 2));
                 Console.WriteLine("value of sum:  " + value);
                 string str = value.ToString();
-                if (dic.ContainsKey(value))
-                    num1 = dic[value];
-                else
-                {
-                    t = check_in_dic.CheckInDict(dic, s.sum);
-                    if (t != -1 && s.num == -1)
-                    {
-                        num1 = t;
-                    }
-                }
-                //for (int i = 0; i < s.str.Length; i++)
-                //if (s.str[i] == 2 && i<s.str.Length-1 && s.str[i + 1] == 2)             //אם מופיעות 2 מילות שלילה רצופות
+                num1= check_in_dic.CheckInDict(dic, s.sum);
                 if (s.not % 2 == 1 || s.time!=0)
                 {
                     num1 = -1;                                                             //התסמין לא רלונטי
