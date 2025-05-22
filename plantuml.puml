@@ -1,0 +1,15 @@
+﻿@startuml
+
+class ClassA {
+    +attribute1: int
+    +method1(): void
+}
+
+class ClassB {
+    +attribute2: string
+    +method2(): void
+}
+
+ClassA <|-- ClassB
+
+@enduml
